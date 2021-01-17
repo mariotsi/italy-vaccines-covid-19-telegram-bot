@@ -1,0 +1,61 @@
+service: vaccini-bot
+
+
+custom:
+  vacciniTable: 'vaccini-table-${self:provider.stage}'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - { "Fn::GetAtt": ["VacciniDynamoDBTable", "Arn" ] }
+  environment:
+    VACCINI_TABLE: ${self:custom.vacciniTable}
+    TELEGRAM_TOKEN: ${ssm:vaccini-bot-token}
+  
+
+plugins:
+  - serverless-plugin-typescript 
+  - serverless-offline
+
+
+functions:
+  app:
+    handler: index.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+  crawl:
+    handler: index.crawl
+    events:
+      - schedule: rate(1 hour)
+
+
+resources:
+  Resources:
+    VacciniDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: type
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: type
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.vacciniTable}
