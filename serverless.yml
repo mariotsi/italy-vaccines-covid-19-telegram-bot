@@ -7,6 +7,7 @@ custom:
 provider:
   name: aws
   runtime: nodejs12.x
+  timeout: 60
   stage: dev
   region: us-east-1
   iamRoleStatements:
