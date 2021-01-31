@@ -26,10 +26,8 @@ export const getCurrentNumberOfAdministrations = async (): Promise<ResultCurrent
     try {
         const summary: SummaryAdministrations = (await axios.get('https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-summary-latest.json')).data
         return summary.data.reduce((acc, instance) => {
-            if (instance.area === 'ITA') {
-                acc.total = acc.total + instance.totale;
-                acc.lastDate = new Date(acc.lastDate || 0) > new Date(instance.data_somministrazione) ? acc.lastDate : instance.data_somministrazione;
-            }
+            acc.total = acc.total + instance.totale;
+            acc.lastDate = new Date(acc.lastDate || 0) > new Date(instance.data_somministrazione) ? acc.lastDate : instance.data_somministrazione;
             return acc;
         }, { total: 0, lastDate: '' }
         )

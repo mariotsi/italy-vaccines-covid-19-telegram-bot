@@ -57,7 +57,7 @@ const crawl = async (req, res) => {
         await saveCurrentNumberOfAdministrations(currentAdministrationItaly, lastDate)
         await notifyUsers(currentAdministrationItaly);
     } else {
-        console.log('No changes in administrations since the last time I checked', previousAdministrationItaly, currentAdministrationItaly)
+        console.log('No changes in administrations since the last time I checked:', previousAdministrationItaly, currentAdministrationItaly)
     }
 
 
