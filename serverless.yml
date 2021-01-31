@@ -40,7 +40,7 @@ functions:
   crawl:
     handler: index.crawl
     events:
-      - schedule: rate(1 hour)
+      - schedule: cron(0 8-23,0-1 * * ? *)
 
 
 resources:
