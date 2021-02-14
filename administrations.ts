@@ -9,6 +9,7 @@ type SingleAdministration = {
     data_somministrazione: string;
     area: string;
     totale: number;
+    seconda_dose: number;
     sesso_maschile: number;
     sesso_femminile: number;
     categoria_operatori_sanitari_sociosanitari: number;
@@ -21,22 +22,26 @@ type SummaryAdministrations = {
 
 }
 
-type ResultCurrentAdministrations = { total: number, lastDate: string }
+type ResultCurrentAdministrations = { total: number, secondDose: number, lastDate: string }
 export const getCurrentNumberOfAdministrations = async (): Promise<ResultCurrentAdministrations> => {
     try {
         const summary: SummaryAdministrations = (await axios.get('https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-summary-latest.json')).data
         return summary.data.reduce((acc, instance) => {
             acc.total = acc.total + instance.totale;
+            acc.secondDose = acc.secondDose + instance.seconda_dose;
             acc.lastDate = new Date(acc.lastDate || 0) > new Date(instance.data_somministrazione) ? acc.lastDate : instance.data_somministrazione;
             return acc;
-        }, { total: 0, lastDate: '' }
+        }, { total: 0, lastDate: '', secondDose: 0 }
         )
     } catch (error) {
         console.error('Cannot fetch new numbers', error)
     }
 }
 
-export const getPreviousNumberOfAdministrations = async (): Promise<number> => {
+export const getPreviousNumberOfAdministrations = async (): Promise<{
+    previousAdministrationItaly: number;
+    previousPeopleFullyCoveredItaly: number;
+}> => {
     try {
         const latestTotalAdministrationItaly = await dynamoDb.get({
             TableName: VACCINI_TABLE,
@@ -44,17 +49,20 @@ export const getPreviousNumberOfAdministrations = async (): Promise<number> => {
                 type: 'total',
             },
         }).promise()
-        return latestTotalAdministrationItaly.Item?.value ?? 0
+        return { previousAdministrationItaly: latestTotalAdministrationItaly.Item?.value ?? 0, previousPeopleFullyCoveredItaly: latestTotalAdministrationItaly.Item?.peopleFullyCovered ?? 0 }
     } catch {
-        return 0
+        return {
+            previousAdministrationItaly: 0,
+            previousPeopleFullyCoveredItaly: 0
+        }
     }
 }
 
-
-export const saveCurrentNumberOfAdministrations = async (administrations: number, date: string) => {
+export const saveCurrentNumberOfAdministrations = async (administrations: number, peopleFullyCovered: number, date: string) => {
     const item = {
         type: 'total',
         value: administrations,
+        peopleFullyCovered,
         date,
         lastUpdated: new Date().toISOString()
     }

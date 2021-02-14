@@ -56,7 +56,7 @@ export const sendToUser = async (chat_id, text) => await axios.get(`https://api.
         text
     }
 })
-export const notifyUsers = async (currentAdministrationItaly: number, users?:number[]) =>{
+export const notifyUsers = async (currentAdministrationItaly: number, secondDosesAdministredItaly: number, users?: number[]) => {
     const userIds = users || await getAllUsersChatIds();
-    await Promise.allSettled(userIds.map(id=> sendToUser(id, `${new Intl.NumberFormat('it-IT').format(currentAdministrationItaly)} vaccini somministrati.`)))
- }
+    await Promise.allSettled(userIds.map(id => sendToUser(id, `${new Intl.NumberFormat('it-IT').format(currentAdministrationItaly)} vaccini somministrati.\n${new Intl.NumberFormat('it-IT').format(secondDosesAdministredItaly)} persone vaccinate (due dosi)`)))
+}

@@ -23,8 +23,8 @@ app.post('/bot', async (req, res) => {
 Ti invierò aggiornamenti automatici riguardo l'andamento della vaccinazione in Italia.
 
 Se vuoi interrompere gli aggiornamenti scrivimi /stop`)
-            const previousAdministrationItaly = await getPreviousNumberOfAdministrations()
-            await notifyUsers(previousAdministrationItaly, [chat.id])
+            const { previousAdministrationItaly, previousPeopleFullyCoveredItaly } = await getPreviousNumberOfAdministrations()
+            await notifyUsers(previousAdministrationItaly, previousPeopleFullyCoveredItaly, [chat.id])
         } catch (error) {
             await sendToUser(chat.id, `Ops ${chat.first_name || `@${chat.username}`}, c'è stato un problema, per favore prova ancora ad inviare /start`)
         }
@@ -50,12 +50,12 @@ Se cambi idea scrivimi /start`)
 
 
 const crawl = async (req, res) => {
-    const { total: currentAdministrationItaly, lastDate } = await getCurrentNumberOfAdministrations()
-    const previousAdministrationItaly = await getPreviousNumberOfAdministrations()
+    const { total: currentAdministrationItaly, lastDate, secondDose: peopleFullyCovered } = await getCurrentNumberOfAdministrations()
+    const { previousAdministrationItaly } = await getPreviousNumberOfAdministrations()
     if (currentAdministrationItaly > previousAdministrationItaly) {
         console.log('Saving new administrations since the number changed', previousAdministrationItaly, currentAdministrationItaly)
-        await saveCurrentNumberOfAdministrations(currentAdministrationItaly, lastDate)
-        await notifyUsers(currentAdministrationItaly);
+        await saveCurrentNumberOfAdministrations(currentAdministrationItaly, peopleFullyCovered, lastDate)
+        await notifyUsers(currentAdministrationItaly, peopleFullyCovered);
     } else {
         console.log('No changes in administrations since the last time I checked:', previousAdministrationItaly, currentAdministrationItaly)
     }
