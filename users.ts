@@ -56,7 +56,17 @@ export const sendToUser = async (chat_id, text) => await axios.get(`https://api.
         text
     }
 })
-export const notifyUsers = async (currentAdministrationItaly: number, peopleFullyCovered: number, boosterDoses: number, users?: number[]) => {
+export const notifyUsers = async (currentAdministrationItaly: number, peopleFullyCovered: number, boosterDoses: number, platea: number, users?: number[]) => {
     const userIds = users || await getAllUsersChatIds();
-    await Promise.allSettled(userIds.map(id => sendToUser(id, `${new Intl.NumberFormat('it-IT').format(currentAdministrationItaly)} vaccini somministrati.\n${new Intl.NumberFormat('it-IT').format(peopleFullyCovered)} persone vaccinate 💉💉 o 💉\n${new Intl.NumberFormat('it-IT').format(boosterDoses)} dosi booster 💉💉💉`)))
+    await Promise.allSettled(userIds.map(id => sendToUser(id, `Persone con ciclo vaccinale completo
+${new Intl.NumberFormat('it-IT').format(peopleFullyCovered)} (${new Intl.NumberFormat('it-IT', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    }).format(peopleFullyCovered / platea * 100)}%)
+
+Dosi booster
+${new Intl.NumberFormat('it-IT').format(boosterDoses)}
+
+Totale dosi somministrate
+${new Intl.NumberFormat('it-IT').format(currentAdministrationItaly)}`)))
 }

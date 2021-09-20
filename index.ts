@@ -2,7 +2,7 @@ import serverless from 'serverless-http';
 import express from 'express';
 import bodyParser from 'body-parser';
 import { saveUser, notifyUsers, deleteUser, sendToUser } from './users';
-import { getCurrentNumberOfAdministrations, getPreviousNumberOfAdministrations, saveCurrentNumberOfAdministrations } from './administrations';
+import { getCurrentNumberOfAdministrations, getPlatea, getPreviousNumberOfAdministrations, saveCurrentNumberOfAdministrations } from './administrations';
 global.Intl = require('intl');
 
 
@@ -23,8 +23,8 @@ app.post('/bot', async (req, res) => {
 Ti invierò aggiornamenti automatici riguardo l'andamento della vaccinazione in Italia.
 
 Se vuoi interrompere gli aggiornamenti scrivimi /stop`)
-            const { previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly } = await getPreviousNumberOfAdministrations()
-            await notifyUsers(previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, [chat.id])
+            const { previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, plateaItaly } = await getPreviousNumberOfAdministrations()
+            await notifyUsers(previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, platea, [chat.id])
         } catch (error) {
             await sendToUser(chat.id, `Ops ${chat.first_name || `@${chat.username}`}, c'è stato un problema, per favore prova ancora ad inviare /start`)
         }
@@ -54,8 +54,9 @@ const crawl = async (req, res) => {
     const { previousAdministrationItaly } = await getPreviousNumberOfAdministrations()
     if (currentAdministrationItaly > previousAdministrationItaly) {
         console.log('Saving new administrations since the number changed', previousAdministrationItaly, currentAdministrationItaly)
-        await saveCurrentNumberOfAdministrations(currentAdministrationItaly, peopleFullyCovered, boosterDoses, lastDate)
-        await notifyUsers(currentAdministrationItaly, peopleFullyCovered, boosterDoses);
+        const platea: number = await getPlatea()
+        await saveCurrentNumberOfAdministrations(currentAdministrationItaly, peopleFullyCovered, boosterDoses, platea, lastDate)
+        await notifyUsers(currentAdministrationItaly, peopleFullyCovered, boosterDoses, platea);
     } else {
         console.log('No changes in administrations since the last time I checked:', previousAdministrationItaly, currentAdministrationItaly)
     }
