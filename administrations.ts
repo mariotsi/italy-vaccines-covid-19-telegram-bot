@@ -4,17 +4,27 @@ import AWS from 'aws-sdk';
 const VACCINI_TABLE = process.env.VACCINI_TABLE;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
+
+enum Fornitore {
+    PZIFER = 'Pfizer/BioNTech',
+    MODERNA = 'Moderna',
+    ASTRAZENECA = 'Vaxzevria (AstraZeneca)',
+    JANSEEN = 'Janssen',
+}
+
 type SingleAdministration = {
     index: number;
     data_somministrazione: string;
+    fornitore: Fornitore
     area: string;
-    totale: number;
-    seconda_dose: number;
+    fascia_anagrafica: string;
     sesso_maschile: number;
     sesso_femminile: number;
-    categoria_operatori_sanitari_sociosanitari: number;
-    categoria_personale_non_sanitario: number;
-    categoria_ospiti_rsa: number;
+    prima_dose: number;
+    seconda_dose: number;
+    pregressa_infezione: number,
+    dose_aggiuntiva: number;
+    nome_area: string;
 }
 
 type SummaryAdministrations = {
@@ -22,16 +32,18 @@ type SummaryAdministrations = {
 
 }
 
-type ResultCurrentAdministrations = { total: number, secondDose: number, lastDate: string }
+
+type ResultCurrentAdministrations = { totalDoses: number, peopleFullyCovered: number, lastDate: string, boosterDoses: number }
 export const getCurrentNumberOfAdministrations = async (): Promise<ResultCurrentAdministrations> => {
     try {
-        const summary: SummaryAdministrations = (await axios.get('https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-summary-latest.json')).data
+        const summary: SummaryAdministrations = (await axios.get('https://raw.githubusercontent.com/italia/covid19-opendata-vaccini/master/dati/somministrazioni-vaccini-latest.json')).data
         return summary.data.reduce((acc, instance) => {
-            acc.total = acc.total + instance.totale;
-            acc.secondDose = acc.secondDose + instance.seconda_dose;
+            acc.boosterDoses = acc.boosterDoses + instance.dose_aggiuntiva,
+                acc.totalDoses = acc.totalDoses + instance.seconda_dose + instance.pregressa_infezione + instance.prima_dose + instance.dose_aggiuntiva
+            acc.peopleFullyCovered = acc.peopleFullyCovered + instance.seconda_dose + instance.pregressa_infezione + instance.fornitore === Fornitore.JANSEEN ? instance.prima_dose : 0;
             acc.lastDate = new Date(acc.lastDate || 0) > new Date(instance.data_somministrazione) ? acc.lastDate : instance.data_somministrazione;
             return acc;
-        }, { total: 0, lastDate: '', secondDose: 0 }
+        }, { totalDoses: 0, lastDate: '', peopleFullyCovered: 0, boosterDoses: 0 }
         )
     } catch (error) {
         console.error('Cannot fetch new numbers', error)
@@ -41,6 +53,7 @@ export const getCurrentNumberOfAdministrations = async (): Promise<ResultCurrent
 export const getPreviousNumberOfAdministrations = async (): Promise<{
     previousAdministrationItaly: number;
     previousPeopleFullyCoveredItaly: number;
+    boosterDosesItaly: number;
 }> => {
     try {
         const latestTotalAdministrationItaly = await dynamoDb.get({
@@ -49,20 +62,22 @@ export const getPreviousNumberOfAdministrations = async (): Promise<{
                 type: 'total',
             },
         }).promise()
-        return { previousAdministrationItaly: latestTotalAdministrationItaly.Item?.value ?? 0, previousPeopleFullyCoveredItaly: latestTotalAdministrationItaly.Item?.peopleFullyCovered ?? 0 }
+        return { previousAdministrationItaly: latestTotalAdministrationItaly.Item?.value ?? 0, previousPeopleFullyCoveredItaly: latestTotalAdministrationItaly.Item?.peopleFullyCovered ?? 0, boosterDosesItaly: latestTotalAdministrationItaly.Item?.boosterDoses ?? 0 }
     } catch {
         return {
             previousAdministrationItaly: 0,
-            previousPeopleFullyCoveredItaly: 0
+            previousPeopleFullyCoveredItaly: 0,
+            boosterDosesItaly: 0
         }
     }
 }
 
-export const saveCurrentNumberOfAdministrations = async (administrations: number, peopleFullyCovered: number, date: string) => {
+export const saveCurrentNumberOfAdministrations = async (administrations: number, peopleFullyCovered: number, boosterDoses: number, date: string) => {
     const item = {
         type: 'total',
         value: administrations,
         peopleFullyCovered,
+        boosterDoses,
         date,
         lastUpdated: new Date().toISOString()
     }
