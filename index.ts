@@ -24,7 +24,7 @@ Ti invierò aggiornamenti automatici riguardo l'andamento della vaccinazione in 
 
 Se vuoi interrompere gli aggiornamenti scrivimi /stop`)
             const { previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, plateaItaly } = await getPreviousNumberOfAdministrations()
-            await notifyUsers(previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, platea, [chat.id])
+            await notifyUsers(previousAdministrationItaly, previousPeopleFullyCoveredItaly, boosterDosesItaly, plateaItaly, [chat.id])
         } catch (error) {
             await sendToUser(chat.id, `Ops ${chat.first_name || `@${chat.username}`}, c'è stato un problema, per favore prova ancora ad inviare /start`)
         }
